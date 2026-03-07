@@ -8,6 +8,12 @@ import { AdBanner } from '@/components/AdBanner'
 
 const GENDERS = ['Not specified', 'Female', 'Male', 'Non-binary', 'Prefer not to say']
 
+const SIGN_EMOJIS: Record<ZodiacSign, string> = {
+  Aries: '🐏', Taurus: '🐂', Gemini: '👯', Cancer: '🦀',
+  Leo: '🦁', Virgo: '🌾', Libra: '⚖️', Scorpio: '🦂',
+  Sagittarius: '🏹', Capricorn: '🐐', Aquarius: '🌊', Pisces: '🐠',
+}
+
 function calcAge(dob: string): number {
   const today = new Date()
   const birth = new Date(dob)
@@ -75,11 +81,11 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 mb-4">
             <span className="text-4xl animate-float">✦</span>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight shimmer-text mb-3">
+          <h1 className="font-brand text-5xl sm:text-6xl font-extrabold tracking-tight shimmer-text mb-2">
             NACKSHATRA
           </h1>
-          <p className="text-sm font-medium tracking-[0.3em] text-white/40 uppercase">
-            AI × Vedic × Western
+          <p className="text-sm font-medium text-white/40 lowercase tracking-wide">
+            your Astro homie ✦
           </p>
         </div>
 
@@ -184,7 +190,7 @@ export default function Home() {
 
         {/* Sign picker — SEO links */}
         <div className="w-full max-w-sm mx-auto mt-8">
-          <p className="text-center text-white/40 text-xs uppercase tracking-wider mb-3">
+          <p className="text-left text-white/40 text-xs uppercase tracking-wider mb-3">
             Jump to your sign
           </p>
           <div className="grid grid-cols-6 gap-2">
@@ -194,8 +200,8 @@ export default function Home() {
                 href={`/sign/${sign.toLowerCase()}`}
                 className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/5 hover:bg-gold/10 border border-white/5 hover:border-gold/20 transition-all group"
               >
-                <span className="text-lg group-hover:scale-110 transition-transform">
-                  {SIGN_INFO[sign].emoji}
+                <span className="text-xl group-hover:scale-110 transition-transform">
+                  {SIGN_EMOJIS[sign]}
                 </span>
                 <span className="text-white/40 text-[9px] truncate w-full text-center">
                   {sign.slice(0, 3)}

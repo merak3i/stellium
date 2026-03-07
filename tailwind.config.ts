@@ -32,6 +32,7 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         display: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+        brand: ['var(--font-syne)', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'cosmic-gradient': 'radial-gradient(ellipse at top, #2D1B69 0%, #1A1A2E 50%, #070710 100%)',

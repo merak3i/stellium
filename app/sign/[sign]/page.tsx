@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { getTodayCosmicContext, SIGN_INFO } from '@/lib/astrology'
 import type { ZodiacSign } from '@/lib/astrology'
 import { buildDailyPrompt } from '@/lib/prompts'
+import { generateReading, dailyCacheKey } from '@/lib/ai'
+import { AdBanner } from '@/components/AdBanner'
 
 // Revalidate every 12 hours — readings refresh twice daily
 export const revalidate = 43200
-import { generateReading, dailyCacheKey } from '@/lib/ai'
-import { AdBanner } from '@/components/AdBanner'
 
 const VALID_SIGNS = [
   'aries','taurus','gemini','cancer','leo','virgo',
