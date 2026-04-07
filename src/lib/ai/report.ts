@@ -3,7 +3,11 @@ import type { NatalChart, PlanetId } from '@/types'
 import type { ChineseChart } from '@/lib/astro/chinese'
 import { buildWesternPrompt, buildVedicPrompt, buildChinesePrompt } from './prompts'
 
-const client = new Anthropic()
+let client: Anthropic | null = null
+function getClient(): Anthropic {
+  if (!client) client = new Anthropic()
+  return client
+}
 
 export async function generateReport(
   chart: NatalChart,
@@ -20,7 +24,7 @@ export async function generateReport(
     prompt = buildWesternPrompt(chart, unlockedIds)
   }
 
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model: 'claude-opus-4-6',
     max_tokens: 1024,
     messages: [{ role: 'user', content: prompt }],

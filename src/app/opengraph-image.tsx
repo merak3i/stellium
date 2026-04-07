@@ -22,39 +22,43 @@ export default async function Image() {
           position: 'relative',
         }}
       >
-        {/* Ambient asterisks */}
+        {/* Ambient marks — ASCII to keep the pure monochrome register */}
         <div
           style={{
             position: 'absolute',
-            top: 84,
-            right: 110,
-            fontSize: 34,
+            top: 82,
+            right: 112,
+            fontSize: 44,
             color: 'rgba(255,255,255,0.22)',
+            fontWeight: 300,
+            letterSpacing: '0.1em',
           }}
         >
-          ✳
+          *
         </div>
         <div
           style={{
             position: 'absolute',
             top: 170,
             right: 178,
-            fontSize: 20,
+            fontSize: 22,
             color: 'rgba(255,255,255,0.14)',
+            fontWeight: 300,
           }}
         >
-          ✴
+          +
         </div>
         <div
           style={{
             position: 'absolute',
-            top: 120,
+            top: 118,
             left: 140,
-            fontSize: 14,
-            color: 'rgba(255,255,255,0.16)',
+            fontSize: 16,
+            color: 'rgba(255,255,255,0.18)',
+            fontWeight: 300,
           }}
         >
-          ✵
+          ·
         </div>
 
         {/* Top label */}
@@ -116,7 +120,7 @@ export default async function Image() {
           }}
         >
           <div style={{ display: 'flex' }}>As Above · So Below</div>
-          <div style={{ display: 'flex' }}>✳ ✴ ✵</div>
+          <div style={{ display: 'flex', letterSpacing: '0.4em' }}>* + *</div>
         </div>
       </div>
     ),

@@ -57,27 +57,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <head>
-        {/* Seanor — wordmark font */}
-        <link href="https://fonts.cdnfonts.com/css/seanor" rel="stylesheet" />
-        {/* Syncopate — display/title alternative */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap"
-          rel="stylesheet"
-        />
-        {/* Space Grotesk — labels */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-        {/* Inter — system fallback for Helvetica Neue */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="bg-black text-white antialiased overflow-hidden">
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-black text-white antialiased overflow-hidden" suppressHydrationWarning>
         {children}
       </body>
     </html>
