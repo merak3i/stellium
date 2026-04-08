@@ -294,7 +294,7 @@ export default function Landing({ onEnter }: LandingProps) {
         </svg>
       </div>
 
-      {/* STELLIUM wordmark — top left — ENTRY POINT (spec: click wordmark to enter) */}
+      {/* STELLIUM wordmark — top left — ENTRY POINT */}
       <button
         onClick={onEnter}
         onMouseEnter={() => setWordmarkHover(true)}
@@ -311,6 +311,36 @@ export default function Landing({ onEnter }: LandingProps) {
         }}
       >
         STELLIUM
+      </button>
+
+      {/* ENTER SITE — bottom left CTA */}
+      <button
+        onClick={onEnter}
+        className="fixed z-20 select-none bg-transparent border-none p-0"
+        style={{
+          bottom: 'clamp(20px,3vh,36px)',
+          left: 'clamp(22px,2.5vw,40px)',
+          fontFamily: "'Space Grotesk', 'JetBrains Mono', monospace",
+          fontSize: 'clamp(9px,0.9vw,13px)',
+          letterSpacing: '0.30em',
+          color: 'rgba(255,255,255,0.35)',
+          textTransform: 'uppercase',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+          paddingBottom: '2px',
+          cursor: 'none',
+          transition: 'color 0.3s ease, border-color 0.3s ease',
+          whiteSpace: 'nowrap',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.color = 'rgba(255,255,255,0.80)'
+          e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.45)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.color = 'rgba(255,255,255,0.35)'
+          e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.12)'
+        }}
+      >
+        Enter Site
       </button>
 
       {/* Ambient cycling text — left edge, bleeding off screen */}

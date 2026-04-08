@@ -10,6 +10,7 @@ export type Screen =
 // ─── Birth Data ──────────────────────────────────────────────────────────────
 
 export interface BirthData {
+  name?: string       // As the user is known
   date: string        // ISO date string: YYYY-MM-DD
   time: string        // HH:MM (24h)
   place: string       // City name or coordinates

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import type { BirthData } from '@/types'
 
 interface BirthDataEntryProps {
@@ -8,356 +8,200 @@ interface BirthDataEntryProps {
 }
 
 interface PlaceResult {
-  display_name: string
-  lat: string
-  lon: string
-  name: string
-  address?: {
-    city?: string
-    town?: string
-    village?: string
-    country?: string
-  }
+  display: string
+  lat: number
+  lng: number
 }
 
-function shortLabel(r: PlaceResult): string {
-  const parts: string[] = []
-  const city = r.address?.city ?? r.address?.town ?? r.address?.village
-  if (city) parts.push(city)
-  if (r.address?.country) parts.push(r.address.country)
-  return parts.length ? parts.join(', ') : r.display_name.split(',').slice(0, 2).join(',').trim()
-}
-
-const LABEL = {
-  fontFamily: "'Space Grotesk', sans-serif",
-  fontSize: '9px',
-  letterSpacing: '0.28em',
-  color: 'rgba(255,255,255,0.28)',
-  textTransform: 'uppercase' as const,
-  marginBottom: '6px',
-  display: 'block',
-}
-
-const FIELD = {
-  background: 'transparent',
-  border: 'none',
-  borderBottom: '1px solid rgba(255,255,255,0.10)',
-  outline: 'none',
-  width: '100%',
-  color: 'rgba(255,255,255,0.85)',
-  fontFamily: "'Space Grotesk', sans-serif",
-  fontSize: '13px',
-  letterSpacing: '0.12em',
-  padding: '8px 0 10px',
-  caretColor: 'rgba(255,255,255,0.5)',
-  colorScheme: 'dark' as const,
-}
+const HUD = "'Helvetica Neue', 'HelveticaNeue', 'Inter', Helvetica, Arial, sans-serif"
+const MONO = "'Space Grotesk', 'JetBrains Mono', monospace"
 
 export default function BirthDataEntry({ onSubmit }: BirthDataEntryProps) {
-  const [date,    setDate]    = useState('')
-  const [time,    setTime]    = useState('')
-  const [place,   setPlace]   = useState('')
-  const [lat,     setLat]     = useState<number | null>(null)
-  const [lng,     setLng]     = useState<number | null>(null)
+  const [name, setName] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [place, setPlace] = useState('')
+  const [lat, setLat] = useState<number | null>(null)
+  const [lng, setLng] = useState<number | null>(null)
+  const [results, setResults] = useState<PlaceResult[]>([])
+  const [open, setOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const [loading, setLoading] = useState(false)
 
-  const [results,  setResults]  = useState<PlaceResult[]>([])
-  const [loading,  setLoading]  = useState(false)
-  const [dropOpen,  setDropOpen]  = useState(false)
-  const [geoError,  setGeoError]  = useState(false)
-  const [highlight, setHighlight] = useState(0)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const placeRef     = useRef<HTMLInputElement>(null)
+  const canSubmit = date.length > 0 && time.length > 0 && place.length > 0 && lat !== null && lng !== null
 
-  // Nominatim search
-  const searchPlace = useCallback(async (q: string) => {
-    if (q.length < 2) { setResults([]); setDropOpen(false); setGeoError(false); return }
+  const fetchPlaces = useCallback(async (q: string) => {
+    if (abortRef.current) abortRef.current.abort()
+    abortRef.current = new AbortController()
     setLoading(true)
-    setGeoError(false)
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=5&featuretype=city`
-      const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } })
-      const data: PlaceResult[] = await res.json()
-      setResults(data)
-      setDropOpen(data.length > 0)
-      setHighlight(0)
-      if (data.length === 0 && q.length >= 3) setGeoError(true)
-    } catch {
-      setResults([])
-      setGeoError(true)
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1&accept-language=en`
+      const res = await fetch(url, { signal: abortRef.current.signal, headers: { 'User-Agent': 'STELLIUM/1.0' } })
+      const data = await res.json()
+      type NomItem = { address: Record<string, string>; display_name: string; lat: string; lon: string }
+      const mapped: PlaceResult[] = (data as NomItem[]).map(item => {
+        const a = item.address || {}
+        const city = a.city || a.town || a.village || a.municipality || a.county || ''
+        const state = a.state || a.region || ''
+        const country = a.country || ''
+        const parts = [city, state, country].filter(Boolean).filter((p, i, arr) => i === 0 || p !== arr[i - 1])
+        return { display: parts.join(', ') || item.display_name.split(',').slice(0, 3).join(',').trim(), lat: parseFloat(item.lat), lng: parseFloat(item.lon) }
+      }).filter((r, i, arr) => arr.findIndex(x => x.display === r.display) === i)
+      setResults(mapped)
+      setOpen(mapped.length > 0)
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') setResults([])
     } finally {
       setLoading(false)
     }
   }, [])
 
   const handlePlaceChange = (v: string) => {
-    setPlace(v)
-    setLat(null)
-    setLng(null)
-    setGeoError(false)
+    setPlace(v); setLat(null); setLng(null)
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => searchPlace(v), 380)
+    if (v.length < 2) { setOpen(false); return }
+    debounceRef.current = setTimeout(() => fetchPlaces(v), 380)
   }
 
-  const selectResult = (r: PlaceResult) => {
-    setPlace(shortLabel(r))
-    setLat(parseFloat(r.lat))
-    setLng(parseFloat(r.lon))
-    setDropOpen(false)
-    setResults([])
-    setGeoError(false)
+  const pick = (r: PlaceResult) => {
+    setPlace(r.display); setLat(r.lat); setLng(r.lng); setOpen(false); setResults([])
   }
 
-  // Keyboard nav on place field
-  const handlePlaceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!dropOpen || results.length === 0) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setHighlight((h) => Math.min(h + 1, results.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setHighlight((h) => Math.max(h - 1, 0))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      selectResult(results[highlight])
-    } else if (e.key === 'Escape') {
-      setDropOpen(false)
-    }
+  const handleKD = (e: React.KeyboardEvent) => {
+    if (!open) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, results.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); pick(results[activeIdx]) }
+    else if (e.key === 'Escape') setOpen(false)
   }
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setDropOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const isComplete = date && time && place && lat !== null && lng !== null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isComplete) return
-    onSubmit({ date, time, place, latitude: lat!, longitude: lng! })
+    if (!canSubmit) return
+    onSubmit({ name: name.trim() || undefined, date, time, place, latitude: lat ?? undefined, longitude: lng ?? undefined })
+  }
+
+  const inputBase: React.CSSProperties = {
+    width: '100%', background: 'transparent', border: 'none',
+    borderBottom: '1px solid rgba(255,255,255,0.12)', borderRadius: 0,
+    color: 'rgba(255,255,255,0.82)', fontFamily: HUD, fontSize: '13px',
+    fontVariant: 'small-caps', letterSpacing: '0.08em', padding: '8px 0',
+    outline: 'none', transition: 'border-color 0.25s ease',
   }
 
   return (
-    <div
-      className="w-full h-full bg-black flex items-center justify-center"
-      style={{ cursor: 'none' }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="w-full px-8"
-        style={{ maxWidth: 320 }}
-      >
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <div style={{
-            fontFamily: "'Seanor', serif",
-            fontSize: 'clamp(18px, 2.2vw, 30px)',
-            letterSpacing: '0.12em',
-            color: 'rgba(255,255,255,0.55)',
-          }}>
-            STELLIUM
-          </div>
-          <div style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: '8px',
-            letterSpacing: '0.32em',
-            color: 'rgba(255,255,255,0.18)',
-            marginTop: 6,
-            textTransform: 'uppercase',
-          }}>
-            Enter your birth details
-          </div>
+    <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'none', overflow: 'auto', padding: '40px 0' }}>
+
+      {/* Noise */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.016, zIndex: 1,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        backgroundSize: '256px 256px',
+      }}/>
+
+      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 420, padding: '0 28px', position: 'relative', zIndex: 2 }} autoComplete="off">
+
+        {/* ── Header ── */}
+        <div className="s-anim-d1" style={{ textAlign: 'center', marginBottom: 44 }}>
+          <div style={{ fontFamily: HUD, fontSize: '16px', letterSpacing: '0.32em', color: 'rgba(255,255,255,0.20)', marginBottom: 14, userSelect: 'none' }}>◐ ○ ◑</div>
+          <div style={{ fontFamily: HUD, fontSize: '9px', fontVariant: 'small-caps', fontWeight: 500, letterSpacing: '0.32em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 7 }}>Natal Entry</div>
+          <div style={{ fontFamily: MONO, fontSize: '8px', fontStyle: 'italic', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.22)' }}>porta nativitatis — &quot;gate of birth&quot;</div>
         </div>
 
-        {/* Fields */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-
-          {/* Date */}
-          <div>
-            <span style={LABEL}>Date of Birth</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              style={FIELD}
-              required
-            />
-          </div>
-
-          {/* Time */}
-          <div>
-            <span style={LABEL}>Time of Birth</span>
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              style={FIELD}
-              required
-            />
-            <div style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: '8px',
-              letterSpacing: '0.22em',
-              color: 'rgba(255,255,255,0.16)',
-              marginTop: 5,
-            }}>
-              24H — approximate is fine
-            </div>
-          </div>
-
-          {/* Place — with autocomplete */}
-          <div ref={containerRef} style={{ position: 'relative' }}>
-            <span style={LABEL}>Place of Birth</span>
-            <div style={{ position: 'relative' }}>
-              <input
-                ref={placeRef}
-                type="text"
-                value={place}
-                onChange={(e) => handlePlaceChange(e.target.value)}
-                onFocus={() => results.length > 0 && setDropOpen(true)}
-                onKeyDown={handlePlaceKeyDown}
-                style={FIELD}
-                placeholder="City, Country"
-                autoComplete="off"
-                spellCheck={false}
-                required
-              />
-              {/* Loading dot */}
-              {loading && (
-                <span style={{
-                  position: 'absolute', right: 0, top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: 5, height: 5, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.30)',
-                  animation: 'pulse 1s ease infinite',
-                }} />
-              )}
-            </div>
-
-            {/* Dropdown */}
-            {dropOpen && results.length > 0 && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                marginTop: 4,
-                background: '#0C0C0C',
-                border: '1px solid rgba(255,255,255,0.08)',
-                zIndex: 100,
-                maxHeight: 200,
-                overflowY: 'auto',
-              }}>
-                {results.map((r, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => selectResult(r)}
-                    onMouseEnter={() => setHighlight(i)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '9px 12px',
-                      background: i === highlight ? 'rgba(255,255,255,0.06)' : 'transparent',
-                      border: 'none',
-                      borderBottom: i < results.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      color: 'rgba(255,255,255,0.70)',
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      fontSize: '11px',
-                      letterSpacing: '0.08em',
-                      cursor: 'none',
-                    }}
-                  >
-                    {shortLabel(r)}
-                    <span style={{ display: 'block', fontSize: '9px', color: 'rgba(255,255,255,0.25)', marginTop: 2, letterSpacing: '0.12em' }}>
-                      {r.lat.slice(0, 7)}, {r.lon.slice(0, 7)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Lat/lng confirmed */}
-            {lat !== null && (
-              <div style={{
-                fontFamily: "'Space Grotesk', monospace",
-                fontSize: '8px',
-                letterSpacing: '0.22em',
-                color: 'rgba(255,255,255,0.16)',
-                marginTop: 5,
-              }}>
-                {lat.toFixed(4)}° {lng! >= 0 ? 'N' : 'S'} · {Math.abs(lng!).toFixed(4)}° {lng! >= 0 ? 'E' : 'W'}
-              </div>
-            )}
-
-            {geoError && !loading && (
-              <div style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: '8px',
-                letterSpacing: '0.18em',
-                color: 'rgba(255,100,80,0.55)',
-                marginTop: 6,
-              }}>
-                No location found — try a different spelling
-              </div>
-            )}
-          </div>
+        {/* ── Name ── */}
+        <div className="s-anim-d2" style={{ marginBottom: 30 }}>
+          <div style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 7 }}>Name</div>
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="as you are known" style={inputBase}
+            onFocus={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.42)')}
+            onBlur={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.12)')} />
+          <div style={{ fontFamily: MONO, fontSize: '7px', fontStyle: 'italic', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.18)', marginTop: 5 }}>nomen — &quot;that by which one is called&quot;</div>
         </div>
 
-        {/* Submit */}
-        <div style={{ marginTop: 48, textAlign: 'center' }}>
-          <button
-            type="submit"
-            disabled={!isComplete}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderBottom: `1px solid ${isComplete ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.06)'}`,
-              padding: '4px 0 6px',
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: '9px',
-              letterSpacing: '0.38em',
-              textTransform: 'uppercase',
-              color: isComplete ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.18)',
-              cursor: isComplete ? 'none' : 'default',
-              transition: 'color 0.3s, border-color 0.3s',
-            }}
-            onMouseEnter={(e) => {
-              if (!isComplete) return
-              e.currentTarget.style.color = 'rgba(255,255,255,0.95)'
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.50)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = isComplete ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.18)'
-              e.currentTarget.style.borderColor = isComplete ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.06)'
-            }}
-          >
-            Cast Chart
+        {/* Divider */}
+        <div className="s-anim-d2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '0 0 30px' }} />
+
+        {/* ── Date ── */}
+        <div className="s-anim-d3" style={{ marginBottom: 30 }}>
+          <div style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 7 }}>Date of Birth</div>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} required style={{ ...inputBase, colorScheme: 'dark' as never }}
+            onFocus={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.42)')}
+            onBlur={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.12)')} />
+          <div style={{ fontFamily: MONO, fontSize: '7px', fontStyle: 'italic', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.18)', marginTop: 5 }}>dies natalis — &quot;the day of one&apos;s birth&quot;</div>
+        </div>
+
+        {/* ── Time ── */}
+        <div className="s-anim-d4" style={{ marginBottom: 30 }}>
+          <div style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 7 }}>Time of Birth</div>
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} required style={{ ...inputBase, colorScheme: 'dark' as never }}
+            onFocus={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.42)')}
+            onBlur={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.12)')} />
+          <div style={{ fontFamily: MONO, fontSize: '7px', fontStyle: 'italic', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.18)', marginTop: 5 }}>hora nativitatis — &quot;the hour of nativity&quot;</div>
+        </div>
+
+        {/* ── Place ── */}
+        <div className="s-anim-d5" style={{ marginBottom: 38, position: 'relative' }}>
+          <div style={{ fontFamily: MONO, fontSize: '7px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 7 }}>Place of Birth</div>
+          <div style={{ position: 'relative' }}>
+            <input type="text" value={place} onChange={e => handlePlaceChange(e.target.value)} onKeyDown={handleKD}
+              onBlur={() => setTimeout(() => setOpen(false), 200)}
+              placeholder="begin typing a city..." required autoComplete="off" style={inputBase}
+              onFocus={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.42)')}
+              onBlurCapture={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.12)')} />
+            {loading && <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 9, height: 9, border: '1px solid rgba(255,255,255,0.14)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%', animation: 'sspin 0.7s linear infinite' }} />}
+          </div>
+          {open && results.length > 0 && (
+            <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#060606', border: '1px solid rgba(255,255,255,0.09)', margin: 0, padding: 0, listStyle: 'none', zIndex: 50, maxHeight: 200, overflowY: 'auto' }}>
+              {results.map((r, i) => {
+                const city = r.display.split(',')[0]
+                const rest = r.display.slice(city.length).replace(/^,\s*/, '')
+                return (
+                  <li key={i} onMouseDown={() => pick(r)} style={{ padding: '9px 14px', cursor: 'pointer', background: i === activeIdx ? 'rgba(255,255,255,0.04)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.70)', letterSpacing: '0.06em' }}>{city}</span>
+                    {rest && <span style={{ fontFamily: MONO, fontSize: '9px', color: 'rgba(255,255,255,0.28)', marginLeft: 7 }}>{rest}</span>}
+                    <span style={{ float: 'right', fontFamily: MONO, fontSize: '7px', color: 'rgba(255,255,255,0.18)' }}>{r.lat.toFixed(2)}°{r.lat >= 0 ? 'N' : 'S'} {r.lng.toFixed(2)}°{r.lng >= 0 ? 'E' : 'W'}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          <div style={{ fontFamily: MONO, fontSize: '7px', fontStyle: 'italic', letterSpacing: '0.04em', color: 'rgba(255,255,255,0.18)', marginTop: 5 }}>locus originis — &quot;place of origin&quot;</div>
+        </div>
+
+        {/* ── Ornament ── */}
+        <div className="s-anim-d5" style={{ textAlign: 'center', marginBottom: 28, color: 'rgba(255,255,255,0.12)', fontSize: '11px', letterSpacing: '0.32em' }}>✧</div>
+
+        {/* ── Submit ── */}
+        <div className="s-anim-d6" style={{ textAlign: 'center', marginBottom: 22 }}>
+          <button type="submit" disabled={!canSubmit}
+            style={{ background: 'transparent', border: `1px solid ${canSubmit ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)'}`, color: canSubmit ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.20)', fontFamily: HUD, fontVariant: 'small-caps', fontSize: '10px', letterSpacing: '0.28em', textTransform: 'uppercase', padding: '11px 36px', cursor: canSubmit ? 'none' : 'default', transition: 'border-color 0.25s, color 0.25s', borderRadius: 0, outline: 'none' }}
+            onMouseEnter={e => { if (canSubmit) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.50)'; e.currentTarget.style.color = 'rgba(255,255,255,0.95)' } }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = canSubmit ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = canSubmit ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.20)' }}>
+            Cast the Chart
           </button>
         </div>
 
-        {/* Privacy note */}
-        <div style={{
-          marginTop: 28,
-          textAlign: 'center',
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: '8px',
-          letterSpacing: '0.20em',
-          color: 'rgba(255,255,255,0.12)',
-          textTransform: 'uppercase',
-        }}>
+        {/* ── Privacy ── */}
+        <div className="s-anim-d6" style={{ textAlign: 'center', fontFamily: MONO, fontSize: '7px', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.12)', textTransform: 'uppercase' }}>
           Not stored · Not shared
         </div>
+
       </form>
+
+      <style>{`
+        @keyframes sspin { to { transform: translateY(-50%) rotate(360deg); } }
+        .s-anim-d1 { opacity: 0; animation: sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) 0.08s both; }
+        .s-anim-d2 { opacity: 0; animation: sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+        .s-anim-d3 { opacity: 0; animation: sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
+        .s-anim-d4 { opacity: 0; animation: sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) 0.46s both; }
+        .s-anim-d5 { opacity: 0; animation: sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) 0.58s both; }
+        .s-anim-d6 { opacity: 0; animation: sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) 0.72s both; }
+        @keyframes sfadeup { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+        input::placeholder { color: rgba(255,255,255,0.18); font-style: italic; }
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.38); cursor: pointer; }
+      `}</style>
     </div>
   )
 }

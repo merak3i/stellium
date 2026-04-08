@@ -31,7 +31,12 @@ export default function ClientApp() {
       {screen === 'natal-seal' && birthData && (
         <NatalSeal birthData={birthData} onComplete={handleNatalSealComplete} />
       )}
-      {screen === 'chart' && birthData && <ChartEnvironment birthData={birthData} />}
+      {screen === 'chart' && birthData && (
+        <ChartEnvironment
+          birthData={birthData}
+          onBack={() => setScreen('birth-data')}
+        />
+      )}
     </main>
   )
 }

@@ -15,9 +15,10 @@ import { useChartStore } from '@/lib/store/chartStore'
 
 interface ChartEnvironmentProps {
   birthData: BirthData
+  onBack?: () => void
 }
 
-export default function ChartEnvironment({ birthData }: ChartEnvironmentProps) {
+export default function ChartEnvironment({ birthData, onBack }: ChartEnvironmentProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('exterior')
 
   const chart        = useChartStore((s) => s.chart)
@@ -62,6 +63,8 @@ export default function ChartEnvironment({ birthData }: ChartEnvironmentProps) {
         onViewModeToggle={() =>
           setViewMode((v) => (v === 'exterior' ? 'interior' : 'exterior'))
         }
+        onBack={onBack ?? (() => window.location.reload())}
+        birthData={birthData}
       />
     </div>
   )

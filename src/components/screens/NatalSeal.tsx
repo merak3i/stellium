@@ -179,12 +179,29 @@ export default function NatalSeal({ birthData, onComplete }: NatalSealProps) {
   }, [done])
 
   const phase = PHASES[phaseIdx]
+  const MONO = "'Space Grotesk', 'JetBrains Mono', monospace"
+  const HUD  = "'Helvetica Neue', 'HelveticaNeue', 'Inter', Helvetica, Arial, sans-serif"
+  const displayName = birthData.name ? birthData.name.toUpperCase() : null
 
   return (
     <div
-      className="w-full h-full bg-black flex flex-col items-center justify-center gap-10"
+      className="w-full h-full bg-black flex flex-col items-center justify-center gap-8"
       style={{ cursor: 'none' }}
     >
+      {/* Seal label + name — visible from phase 1 onward */}
+      {phaseIdx >= 1 && (
+        <div style={{ textAlign: 'center', animation: 'sfadeup 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
+          <div style={{ fontFamily: MONO, fontSize: '8px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', marginBottom: 6 }}>
+            · NATAL SEAL ·
+          </div>
+          {displayName && (
+            <div style={{ fontFamily: HUD, fontSize: '12px', fontVariant: 'small-caps', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' }}>
+              {displayName}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Canvas seal */}
       <canvas
         ref={canvasRef}
@@ -196,7 +213,7 @@ export default function NatalSeal({ birthData, onComplete }: NatalSealProps) {
 
       {/* Phase label */}
       <div style={{
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: MONO,
         fontSize: '9px',
         letterSpacing: '0.32em',
         textTransform: 'uppercase',
@@ -208,6 +225,13 @@ export default function NatalSeal({ birthData, onComplete }: NatalSealProps) {
         {done ? 'NATAL SEAL ASSEMBLED' : phase}
       </div>
 
+      {/* Latin — visible from phase 2 */}
+      {phaseIdx >= 2 && !done && (
+        <div style={{ fontFamily: MONO, fontSize: '8px', fontStyle: 'italic', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.16)', textAlign: 'center', animation: 'sfadeup 0.5s cubic-bezier(0.16,1,0.3,1) both' }}>
+          computare nativitatem...
+        </div>
+      )}
+
       {/* Breathing dot */}
       {!done && (
         <div style={{
@@ -216,6 +240,10 @@ export default function NatalSeal({ birthData, onComplete }: NatalSealProps) {
           animation: 'pulse 1.4s ease infinite',
         }} />
       )}
+
+      <style>{`
+        @keyframes sfadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   )
 }
