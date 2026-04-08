@@ -21,8 +21,12 @@ export const metadata: Metadata = {
     'as above so below',
     'spatial environment',
   ],
-  authors: [{ name: 'Simulacra', url: 'https://instagram.com/end.of.knowledge' }],
-  creator: 'Simulacra',
+  authors: [
+    { name: 'Vismay Hegde' },
+    { name: 'Vedant Shok Natarajan' },
+    { name: 'Simulacra', url: 'https://instagram.com/end.of.knowledge' },
+  ],
+  creator: 'Vismay Hegde · Vedant Shok Natarajan',
   publisher: 'Simulacra',
   openGraph: {
     type: 'website',

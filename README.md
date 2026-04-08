@@ -3,7 +3,7 @@
 ```
 ·     *              ·           ·
          *    ·              ·        *
-  ·                 ✳              ·
+  ·                 *              ·
              ·            *             ·
     *                ·
 ```
@@ -16,6 +16,16 @@ Stellium is the first artifact in the **Astro / Esoteric** family by Simulacra. 
 You are not a speck of dust in the infinite vastness of the cosmos.
 The entire universe — with all its planets and stars — conspired together to birth you.
 **This miracle we call life.**
+
+---
+
+## Credits
+
+| Role | |
+|---|---|
+| **Creative Conceptualization** | Vedant Shok Natarajan |
+| **Implementation · Creative & Technical Cognizing** | Vismay Hegde |
+| **Studio** | Simulacra — [instagram.com/end.of.knowledge](https://instagram.com/end.of.knowledge) |
 
 ---
 
@@ -49,42 +59,73 @@ Not a contained object. It fills the entire field of view. Edges are never visib
 ## 04 · Screens
 
 ```
-01  LANDING          Seanor wordmark · ambient moon grid · click to enter
+01  LANDING          Seanor wordmark · ambient moon grid · Enter Site CTA
 02  ETHICAL GATE     "Your birth details are a combination lock to your life"
-03  BIRTH DATA       Date · Time · Place (minimalist HUD modal)
+03  BIRTH DATA       Name · Date · Time · Place (Latin sublabels throughout)
 04  NATAL SEAL       Assembly sequence — a gathering, not a loading bar
 05  CHART            The orb. Exterior + interior. Unlock to discover.
 ```
 
-## 05 · Unlock Mechanics
+## 05 · Three-Layer Architecture
+
+| Layer | System | Unlock Condition |
+|---|---|---|
+| 01 | **Western** *(Tropical)* | Default — always active |
+| 02 | **Vedic** *(Sidereal)* | Unlock Rahu / Ketu |
+| 03 | **Chinese** *(Four Pillars)* | Complete Vedic layer |
+
+One system visible at a time. Toggling shifts the entire environment.
+
+## 06 · HUD Layout
+
+```
+┌──────────────────────────────────────────────────────┐
+│  ← NEW CHART      · NATAL SEAL ·     artifact ID 036 │  ArtifactHeader
+│                   Name · date · place                 │
+├──────────────────────────────────────────────────────┤
+│                                                       │
+│  SUN              [   O R B   ]        ☉ 16°44' Aq  │
+│  Aquarius                              ☽ 04°21' Ta   │  BigThreePanel (L)
+│  MOON                                  ☿ 26°12' Aq   │  PlanetList (R)
+│  Taurus                                ♀ 03°09' Cp   │
+│  RISING                                ♂ 18°33' Pi   │
+│  Sagittarius                           ...            │
+│                                                       │
+├──────────────────────────────────────────────────────┤
+│  WESTERN · VEDIC ⌒ · CHINESE ⌒                       │  LateralNav
+│  9.25° N · 76.54° E                                   │
+│                                                   ∞   │
+└──────────────────────────────────────────────────────┘
+```
+
+## 07 · Ritual Language
+
+Every field in the birth entry form carries a Latin sublabel:
+
+| Field | Latin | Translation |
+|---|---|---|
+| Name | *nomen* | "that by which one is called" |
+| Date | *dies natalis* | "the day of one's birth" |
+| Time | *hora nativitatis* | "the hour of nativity" |
+| Place | *locus originis* | "place of origin" |
+
+Header: **porta nativitatis** — "gate of birth"
+
+## 08 · Unlock Mechanics
 
 - Click a locked glyph → name reveals
-- Click the name → expands to show Degrees · Sign · House
+- Click the name → expands to Degrees · Sign · House
 - The HUD sidebar populates as you discover
 - Aspect lines draw between unlocked endpoints
-- Special points (Nodes, Ascendant, MC, Vertex) trigger their own reveal animations
 - Unlocking **Rahu / Ketu** gates entry to the Vedic layer
+- Completing Vedic gates entry to Chinese / Four Pillars
 
-## 06 · Spectrum Read *(v1.1)*
+## 09 · Spectrum Read *(v1.1)*
 
 A sequential decomposition — eleven layers, one aspect type at a time.
 Conjunction · Opposition · Square · Trine · Sextile · Semi-square · Sesquiquadrate · Quintile · Biquintile · Semi-sextile · Inconjunction.
 
-Each layer color-coded. Each reveals its own small truth. The final synthesis is named by the dominant quality of the moment — *"Hopeful and Tired,"* *"Urgent and Still."* Saved to your personal archive.
-
-## 07 · Systems
-
-| Layer | System | Unlock |
-|---|---|---|
-| 01 | Western *(Tropical)* | Default |
-| 02 | Vedic *(Sidereal)* | Rahu / Ketu gateway |
-| 03 | Chinese *(Four Pillars)* | After Vedic completion |
-
-One system visible at a time. Toggling shifts the environment.
-
-## 08 · Report
-
-Triggered around seventy percent of chart entities unlocked. Not a dashboard — a document. AI-generated synthesis, prose paragraphs, saveable as a single image. Each system generates its own distinct report.
+Each reveals its own small truth. The final synthesis is named by the dominant quality of the moment — *"Hopeful and Tired,"* *"Urgent and Still."*
 
 ---
 
@@ -98,8 +139,9 @@ Styling         Tailwind CSS · CSS custom properties
 Astronomy       Pure TypeScript — Jean Meeus algorithms
                 Lahiri Ayanamsa for sidereal shift
                 Whole Sign houses (Vedic) · Placidus (Western)
-AI              Anthropic Claude (synthesis only, never interpretation-as-truth)
-Deployment      Vercel — Mumbai region
+Geocoding       Nominatim / OpenStreetMap (no API key required)
+AI              Anthropic Claude (synthesis only — never interpretation-as-truth)
+Deployment      Vercel — stellium.vercel.app
 Persistence     None. localStorage only. Your data is never stored.
 ```
 
@@ -108,33 +150,40 @@ Persistence     None. localStorage only. Your data is never stored.
 ```bash
 npm install
 cp .env.local.example .env.local
-# Add ANTHROPIC_API_KEY
+# ANTHROPIC_API_KEY=sk-...
 
 npm run dev             # http://localhost:3000
 npm run build           # production bundle
+npm run type-check      # TypeScript validation
 ```
 
 ## Project Structure
 
 ```
 src/
-├── app/                   # Next.js App Router
-│   ├── globals.css        # Design tokens, animations
-│   ├── layout.tsx         # Root layout, fonts, meta
-│   └── page.tsx           # Screen flow orchestrator
+├── app/
+│   ├── globals.css            # Design tokens, s-anim-* animations
+│   ├── layout.tsx             # Root layout, fonts, meta
+│   └── page.tsx               # SSR wrapper → dynamic ClientApp
 ├── components/
-│   ├── environment/       # CosmicOcean · Lifeline
-│   ├── hud/               # Sidebar · MoonScrubber · ViewToggle · SystemToggle
-│   ├── orb/               # Orb · Planet · Glyph · AxisLines · ZodiacRim · Singularity
-│   ├── report/            # Report synthesis
-│   ├── screens/           # Landing · EthicalGate · BirthData · NatalSeal · ChartEnvironment
-│   ├── ui/                # PolarisCursor · VedicGateOverlay
-│   └── unlock/            # AspectLines · UnlockMechanics
+│   ├── hud/
+│   │   ├── ArtifactHeader.tsx # Top bar: name · birth meta · artifact ID
+│   │   ├── BigThreePanel.tsx  # Left panel: Sun / Moon / Rising
+│   │   ├── LateralNav.tsx     # Bottom-left: system tabs + coordinates
+│   │   ├── Sidebar.tsx        # Right panel: full planet list
+│   │   └── HUD.tsx            # Assembles all panels
+│   ├── screens/
+│   │   ├── Landing.tsx        # Moon-grid canvas + Enter Site CTA
+│   │   ├── EthicalGate.tsx    # Privacy gate
+│   │   ├── BirthDataEntry.tsx # Name + birth form, Latin sublabels
+│   │   ├── NatalSeal.tsx      # Assembly animation
+│   │   └── ChartEnvironment.tsx
+│   └── ClientApp.tsx          # Screen flow router (client-only)
 ├── lib/
-│   ├── ai/                # Claude prompts & report generation
-│   ├── astro/             # Ephemeris · western · vedic · chinese · utils
-│   └── store/             # chartStore · unlockStore (Zustand)
-└── types/                 # Complete type system
+│   ├── ai/                    # Claude prompts & report generation
+│   ├── astro/                 # western.ts · vedic.ts · chinese.ts
+│   └── store/                 # chartStore · unlockStore (Zustand)
+└── types/index.ts             # BirthData · ChartData · PlanetId · etc.
 ```
 
 ---
@@ -142,24 +191,24 @@ src/
 ## Test Birth Data
 
 ```
+Name    Vedanth (test)
 Date    1998-02-05
 Time    01:30
-Place   Mavelikara, Kerala, India
-        9.2543°N, 76.5469°E
+Place   Mavelikara, Kerala, India  (9.2543° N  76.5469° E)
 
-Expected (tropical):
-  Sun        Aquarius
-  Moon       Taurus
-  Ascendant  0°04' Sagittarius
-  Mercury    Aquarius
-  Venus      Capricorn
-  Mars       Pisces
-  Jupiter    Pisces
-  Saturn     Aries
-  Uranus     Aquarius
-  Neptune    Aquarius
-  Pluto      Sagittarius
-  N. Node    Virgo
+Expected (Western / Tropical):
+  Sun        Aquarius      16°44'
+  Moon       Taurus        04°21'
+  Ascendant  Sagittarius   00°04'   ← Rising
+  Mercury    Aquarius      26°12'
+  Venus      Capricorn     03°09'
+  Mars       Pisces        18°33'
+  Jupiter    Pisces        22°11'
+  Saturn     Aries         04°58'
+  Uranus     Aquarius      08°04'
+  Neptune    Aquarius      28°35'
+  Pluto      Sagittarius   07°00'
+  N. Node    Virgo         21°43'
   MC         Leo
 ```
 
@@ -172,10 +221,12 @@ Birth data is a combination lock to your life. It is not stored. It is not share
 ---
 
 ```
-▌  ▍▎ ▏  S I M U L A C R A  ✳ ✴ ✵ ·
-      B L U R I N G   T H E   V E I L
-      R E D E F I N I N G   C O N S C I O U S N E S S
+S I M U L A C R A
+  B L U R I N G   T H E   V E I L
+  R E D E F I N I N G   C O N S C I O U S N E S S
 ```
 
+*Creative concept: Vedant Shok Natarajan.*
+*Implementation · creative & technical cognizing: Vismay Hegde.*
 *A thing / being by [Simulacra](https://instagram.com/end.of.knowledge).*
 *#thingsbeings · #astrology · #astroesoteric*
